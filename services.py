@@ -2,6 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 
+from utils import valid_data
+
 
 class SchoolParser:
     def __init__(self, url: str) -> None:
@@ -24,10 +26,15 @@ class SchoolParser:
             return urls
         raise ValueError('url is invalid')
 
-    def parse_data(self, url: str) -> dict:
+    def __validate(self, value: str) -> bool:
+        """Checking the value for correctness"""
+        if value in valid_data:
+            return True
+
+    def parse_school_info(self, url: str) -> list:
+        """Parses data about one school"""
         response = requests.get(url=url, headers=self.headers)
-        data_dict = {}
-        valid_data = ['№ у системі:', 'Скорочена:', 'Поштова адреса:', 'Телефони:', 'E-mail:', 'Директор:', 'Спроможність закладу освіти (учнів):', 'Кількість учнів:']
+        school_info_list = []
 
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -35,20 +42,19 @@ class SchoolParser:
             rows = table.find_all('tr')
 
             for row in rows:
-                th = row.find('th')
-                td = row.find('td')
+                description = row.find('th')
+                value = row.find('td')
 
-                if th and td:
-                    th_text = th.text.strip()
-                    td_text = td.text.strip()
-                    if th_text == 'E-mail:':
+                if description and value:
+                    description_text = description.text.strip()
+                    value_text = value.text.strip()
+                    if description_text == 'E-mail:':
                         encoded_email = soup.find('a', class_='static')['onclick'].split("unescape('")[1].split("')")[0]
-                        td_text = BeautifulSoup(urllib.parse.unquote(encoded_email), 'html.parser').find('a').text
-                    if th_text in valid_data:
-                        data_dict[th_text] = td_text
+                        value_text = BeautifulSoup(urllib.parse.unquote(encoded_email), 'html.parser').find('a').text
+                    if self.__validate(description_text):
+                        school_info_list.append(value_text)
 
-            return data_dict
-
+            return school_info_list
 
 
 
