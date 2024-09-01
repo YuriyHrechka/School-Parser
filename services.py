@@ -23,5 +23,26 @@ class SchoolParser:
             return urls
         raise ValueError('url is invalid')
 
+    def parse_data(self, url: str) -> dict:
+        response = requests.get(url=url, headers=self.headers)
+        data_dict = {}
+
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            table = soup.find('table', class_="zebra-stripe")
+            rows = table.find_all('tr')
+
+            for row in rows:
+                th = row.find('th')
+                td = row.find('td')
+
+                if th and td:
+                    th_text = th.text.strip()
+                    td_text = td.text.strip()
+                    data_dict[th_text] = td_text
+
+            return data_dict
+
+
 
 
