@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import urllib.parse
 
 
 class SchoolParser:
@@ -26,6 +27,7 @@ class SchoolParser:
     def parse_data(self, url: str) -> dict:
         response = requests.get(url=url, headers=self.headers)
         data_dict = {}
+        valid_data = ['№ у системі:', 'Скорочена:', 'Поштова адреса:', 'Телефони:', 'E-mail:', 'Директор:', 'Спроможність закладу освіти (учнів):', 'Кількість учнів:']
 
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -39,7 +41,11 @@ class SchoolParser:
                 if th and td:
                     th_text = th.text.strip()
                     td_text = td.text.strip()
-                    data_dict[th_text] = td_text
+                    if th_text == 'E-mail:':
+                        encoded_email = soup.find('a', class_='static')['onclick'].split("unescape('")[1].split("')")[0]
+                        td_text = BeautifulSoup(urllib.parse.unquote(encoded_email), 'html.parser').find('a').text
+                    if th_text in valid_data:
+                        data_dict[th_text] = td_text
 
             return data_dict
 
