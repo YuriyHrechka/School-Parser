@@ -1,5 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
+import urllib.parse
+
+from utils import valid_data
 
 
 class SchoolParser:
@@ -22,6 +25,36 @@ class SchoolParser:
                 urls.append(f'https://te.isuo.org/{link['href']}')
             return urls
         raise ValueError('url is invalid')
+
+    def __validate(self, value: str) -> bool:
+        """Checking the value for correctness"""
+        if value in valid_data:
+            return True
+
+    def parse_school_info(self, url: str) -> list:
+        """Parses data about one school"""
+        response = requests.get(url=url, headers=self.headers)
+        school_info_list = []
+
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            table = soup.find('table', class_="zebra-stripe")
+            rows = table.find_all('tr')
+
+            for row in rows:
+                description = row.find('th')
+                value = row.find('td')
+
+                if description and value:
+                    description_text = description.text.strip()
+                    value_text = value.text.strip()
+                    if description_text == 'E-mail:':
+                        encoded_email = soup.find('a', class_='static')['onclick'].split("unescape('")[1].split("')")[0]
+                        value_text = BeautifulSoup(urllib.parse.unquote(encoded_email), 'html.parser').find('a').text
+                    if self.__validate(description_text):
+                        school_info_list.append(value_text)
+
+            return school_info_list
 
 
 
