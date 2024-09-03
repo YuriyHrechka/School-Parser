@@ -31,6 +31,31 @@ class SchoolParser:
         if value in valid_data:
             return True
 
+    def extract_info_from_table(self, table: list) -> list:
+        """Method to extract information from table"""
+        extracted_info = []
+
+        for row in table:
+            description = row.find('th')
+            value = row.find('td')
+
+            if description and value:
+                description_text = description.text.strip()
+                value_text = value.text.strip()
+
+                if description_text == 'E-mail:':
+                    # Because of onclick attribute need to parse email separately
+                    email_tag = row.find('a', class_='static')
+                    if email_tag and 'onclick' in email_tag.attrs:
+                        # If the email exists change value_text to actual email
+                        encoded_email = email_tag['onclick'].split("unescape('")[1].split("')")[0]
+                        value_text = BeautifulSoup(urllib.parse.unquote(encoded_email), 'html.parser').find(
+                            'a').text
+                if self.__validate(description_text):
+                    extracted_info.append(value_text if value_text else "No value provided")
+
+        return extracted_info
+
     def parse_school_info(self, url: str) -> list:
         """Parses data about one school"""
         response = requests.get(url=url, headers=self.headers)
@@ -40,21 +65,9 @@ class SchoolParser:
             soup = BeautifulSoup(response.text, 'html.parser')
             table = soup.find('table', class_="zebra-stripe")
             rows = table.find_all('tr')
+            school_info_list = self.extract_info_from_table(rows)
 
-            for row in rows:
-                description = row.find('th')
-                value = row.find('td')
-
-                if description and value:
-                    description_text = description.text.strip()
-                    value_text = value.text.strip()
-                    if description_text == 'E-mail:':
-                        encoded_email = soup.find('a', class_='static')['onclick'].split("unescape('")[1].split("')")[0]
-                        value_text = BeautifulSoup(urllib.parse.unquote(encoded_email), 'html.parser').find('a').text
-                    if self.__validate(description_text):
-                        school_info_list.append(value_text)
-
-            return school_info_list
+        return school_info_list
 
 
 
