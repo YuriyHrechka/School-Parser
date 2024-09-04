@@ -9,7 +9,8 @@ class SchoolParser:
     def __init__(self, url: str) -> None:
         self.url = url
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/58.0.3029.110 Safari/537.3'
         }
 
     def base_url_list(self) -> list:
@@ -26,10 +27,27 @@ class SchoolParser:
             return urls
         raise ValueError('url is invalid')
 
-    def __validate(self, value: str) -> bool:
-        """Checking the value for correctness"""
-        if value in valid_data:
-            return True
+    def extract_school_info_from_urls(self, urls: list) -> list:
+        schools_info_list = []
+
+        for url in urls:
+            school_info = self.parse_school_info(url)
+            schools_info_list.append(school_info)
+
+        return schools_info_list
+
+    def parse_school_info(self, url: str) -> list:
+        """Parses data about one school"""
+        response = requests.get(url=url, headers=self.headers)
+        school_info_list = []
+
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            table = soup.find('table', class_="zebra-stripe")
+            rows = table.find_all('tr')
+            school_info_list = self.extract_info_from_table(rows)
+
+        return school_info_list
 
     def extract_info_from_table(self, table: list) -> list:
         """Method to extract information from table"""
@@ -56,24 +74,7 @@ class SchoolParser:
 
         return extracted_info
 
-    def parse_school_info(self, url: str) -> list:
-        """Parses data about one school"""
-        response = requests.get(url=url, headers=self.headers)
-        school_info_list = []
-
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            table = soup.find('table', class_="zebra-stripe")
-            rows = table.find_all('tr')
-            school_info_list = self.extract_info_from_table(rows)
-
-        return school_info_list
-
-    def extract_school_info_from_urls(self, urls: list) -> list:
-        schools_info_list = []
-
-        for url in urls:
-            school_info = self.parse_school_info(url)
-            schools_info_list.append(school_info)
-
-        return schools_info_list
+    def __validate(self, value: str) -> bool:
+        """Checking the value for correctness"""
+        if value in valid_data:
+            return True
