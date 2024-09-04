@@ -69,5 +69,11 @@ class SchoolParser:
 
         return school_info_list
 
+    def extract_school_info_from_urls(self, urls: list) -> list:
+        schools_info_list = []
 
+        for url in urls:
+            school_info = self.parse_school_info(url)
+            schools_info_list.append(school_info)
 
+        return schools_info_list
