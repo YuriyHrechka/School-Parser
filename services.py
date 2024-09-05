@@ -1,8 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 import urllib.parse
+import xlsxwriter
 
-from utils import valid_data
+from utils import valid_data_schools, valid_data_kindergarten
 
 
 class SchoolParser:
@@ -12,6 +13,7 @@ class SchoolParser:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/58.0.3029.110 Safari/537.3'
         }
+        self.valid_data = valid_data_schools
 
     def base_url_list(self) -> list:
         """Return list with all urls school"""
@@ -76,5 +78,48 @@ class SchoolParser:
 
     def __validate(self, value: str) -> bool:
         """Checking the value for correctness"""
-        if value in valid_data:
+        if value in self.valid_data:
             return True
+
+
+class TableWriter:
+    def __init__(self, schools_info_list: list):
+        self.schools_info_list = schools_info_list
+
+    def write_table(self):
+        book = xlsxwriter.Workbook('parsed_schools.xlsx')
+        page = book.add_worksheet("Item")
+
+        self.__set_columns(page)
+
+        font_format = book.add_format({
+            'bold': True,
+        })
+
+        for i, param in enumerate(valid_data_schools):
+            page.write(0, i, param, font_format)
+
+        row = 1
+        col = 0
+
+        for school_info in self.schools_info_list:
+            for i, value in enumerate(school_info):
+                page.write(row, col + i, value)
+            row += 1
+
+        book.close()
+
+    def __set_columns(self,page):
+        columns = {
+            "A:A": 20,
+            "B:B": 10,
+            "C:C": 10,
+            "D:D": 25,
+            "E:E": 20,
+            "F:F": 20,
+            "G:G": 30,
+            "H:H": 20,
+        }
+
+        for col, width in columns.items():
+            page.set_column(col, width)
