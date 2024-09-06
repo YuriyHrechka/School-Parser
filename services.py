@@ -7,13 +7,18 @@ from utils import valid_data_schools, valid_data_kindergarten
 
 
 class SchoolParser:
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str, institution_type) -> None:
         self.url = url
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/58.0.3029.110 Safari/537.3'
         }
-        self.valid_data = valid_data_schools
+        if institution_type == 'school':
+            self.valid_data = valid_data_schools
+        elif institution_type == 'kindergarten':
+            self.valid_data = valid_data_kindergarten
+        else:
+            raise ValueError("Invalid institution type provided")
 
     def base_url_list(self) -> list:
         """Return list with all urls school"""
@@ -51,9 +56,9 @@ class SchoolParser:
 
         return school_info_list
 
-    def extract_info_from_table(self, table: list) -> list:
+    def extract_info_from_table(self, table: list) -> dict:
         """Method to extract information from table"""
-        extracted_info = []
+        extracted_info = {}
 
         for row in table:
             description = row.find('th')
@@ -72,7 +77,7 @@ class SchoolParser:
                         value_text = BeautifulSoup(urllib.parse.unquote(encoded_email), 'html.parser').find(
                             'a').text
                 if self.__validate(description_text):
-                    extracted_info.append(value_text if value_text else "No value provided")
+                    extracted_info[description_text] = value_text if value_text else "не вказано"
 
         return extracted_info
 
@@ -85,8 +90,10 @@ class SchoolParser:
 class TableWriter:
     def __init__(self, schools_info_list: list):
         self.schools_info_list = schools_info_list
+        self.valid_data = self.__get_valid_data(schools_info_list)
 
     def write_table(self):
+        """Write exel table with schools information"""
         book = xlsxwriter.Workbook('parsed_schools.xlsx')
         page = book.add_worksheet("Item")
 
@@ -96,24 +103,27 @@ class TableWriter:
             'bold': True,
         })
 
-        for i, param in enumerate(valid_data_schools):
+        for i, param in enumerate(self.valid_data):
             page.write(0, i, param, font_format)
 
-        row = 1
-        col = 0
-
-        for school_info in self.schools_info_list:
-            for i, value in enumerate(school_info):
-                page.write(row, col + i, value)
-            row += 1
+        for row, school_info in enumerate(self.schools_info_list, start=1):
+            for col, param in enumerate(self.valid_data):
+                value = school_info.get(param)
+                page.write(row, col, value)
 
         book.close()
+
+    def __get_valid_data(self, school_info_list: list) -> list:
+        if 'Кількість учнів:' in school_info_list:
+            return valid_data_schools
+        else:
+            return valid_data_kindergarten
 
     def __set_columns(self,page):
         columns = {
             "A:A": 20,
-            "B:B": 10,
-            "C:C": 10,
+            "B:B": 20,
+            "C:C": 20,
             "D:D": 25,
             "E:E": 20,
             "F:F": 20,
