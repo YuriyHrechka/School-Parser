@@ -114,6 +114,7 @@ class TableWriter:
         book.close()
 
     def __get_valid_data(self, school_info_list: list) -> list:
+        """Gets valid data depends on institution type"""
         if 'Кількість учнів:' in school_info_list:
             return valid_data_schools
         else:
