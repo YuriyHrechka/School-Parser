@@ -69,17 +69,27 @@ class SchoolParser:
                 value_text = value.text.strip()
 
                 if description_text == 'E-mail:':
-                    # Because of onclick attribute need to parse email separately
-                    email_tag = row.find('a', class_='static')
-                    if email_tag and 'onclick' in email_tag.attrs:
-                        # If the email exists change value_text to actual email
-                        encoded_email = email_tag['onclick'].split("unescape('")[1].split("')")[0]
-                        value_text = BeautifulSoup(urllib.parse.unquote(encoded_email), 'html.parser').find(
-                            'a').text
+                    value_text = self.__parse_email(row)
+                elif description_text == 'Поштова адреса:':
+                    value_text = self.__extract_address(value_text)
+
                 if self.__validate(description_text):
                     extracted_info[description_text] = value_text if value_text else "не вказано"
 
         return extracted_info
+
+    def __parse_email(self, row):
+        """Parses and returns the actual email address from the row."""
+        email_tag = row.find('a', class_='static')
+        if email_tag and 'onclick' in email_tag.attrs:
+            encoded_email = email_tag['onclick'].split("unescape('")[1].split("')")[0]
+            email = BeautifulSoup(urllib.parse.unquote(encoded_email), 'html.parser').find('a').text
+            return email
+        return None
+
+    def __extract_address(self, value_text: str) -> str:
+        """Extracts and returns the postal code from the address string."""
+        return value_text.split(',')[-1]
 
     def __validate(self, value: str) -> bool:
         """Checking the value for correctness"""
