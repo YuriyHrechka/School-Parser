@@ -85,33 +85,15 @@ class SchoolParser:
         """Checking the value for correctness"""
         if value in self.valid_data:
             return True
+        else:
+            return False
 
 
 class TableWriter:
     def __init__(self, schools_info_list: list):
         self.schools_info_list = schools_info_list
         self.valid_data = self.__get_valid_data(schools_info_list)
-
-    def write_table(self):
-        """Write exel table with schools information"""
-        book = xlsxwriter.Workbook('parsed_schools.xlsx')
-        page = book.add_worksheet("Item")
-
-        self.__set_columns(page)
-
-        font_format = book.add_format({
-            'bold': True,
-        })
-
-        for i, param in enumerate(self.valid_data):
-            page.write(0, i, param, font_format)
-
-        for row, school_info in enumerate(self.schools_info_list, start=1):
-            for col, param in enumerate(self.valid_data):
-                value = school_info.get(param)
-                page.write(row, col, value)
-
-        book.close()
+        self.column_widths = [len(header) for header in self.valid_data]
 
     def __get_valid_data(self, school_info_list: list) -> list:
         """Gets valid data depends on institution type"""
@@ -120,17 +102,35 @@ class TableWriter:
         else:
             return valid_data_kindergarten
 
-    def __set_columns(self,page):
-        columns = {
-            "A:A": 20,
-            "B:B": 20,
-            "C:C": 20,
-            "D:D": 25,
-            "E:E": 20,
-            "F:F": 20,
-            "G:G": 30,
-            "H:H": 20,
-        }
+    def write_table(self):
+        """Write exel table with schools information"""
+        book = xlsxwriter.Workbook('parsed_schools.xlsx')
+        page = book.add_worksheet("Item")
 
-        for col, width in columns.items():
-            page.set_column(col, width)
+        self.__write_school_info(page)
+        self.__set_columns(page)
+        self.__write_headers(page, book)
+
+        book.close()
+
+    def __write_school_info(self, page):
+        for row, school_info in enumerate(self.schools_info_list, start=1):
+            for col, param in enumerate(self.valid_data):
+                value = school_info.get(param)
+                page.write(row, col, value)
+
+                # Update column width if current cell's content is wider
+                self.column_widths[col] = max(self.column_widths[col], len(str(value)))
+
+    def __set_columns(self, page):
+        """Set column widths based on the calculated maximum lengths"""
+        for i, width in enumerate(self.column_widths):
+            page.set_column(i, i, width)
+
+    def __write_headers(self, page, book):
+        font_format = book.add_format({
+            'bold': True,
+        })
+
+        for i, param in enumerate(self.valid_data):
+            page.write(0, i, param, font_format)
