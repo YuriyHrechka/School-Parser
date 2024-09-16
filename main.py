@@ -1,5 +1,6 @@
-from services import SchoolParser
+from services import SchoolParser, TableWriter
 
-a = SchoolParser('https://te.isuo.org/koatuu/schools-list/id/6110100000')
+a = SchoolParser('https://te.isuo.org/authorities/preschools-list/id/638', "kindergarten")
 urls_list = a.base_url_list()
-print(a.extract_school_info_from_urls(urls_list))
+b = TableWriter(a.extract_school_info_from_urls(urls_list))
+b.write_table()
