@@ -88,7 +88,7 @@ class SchoolParser:
         return None
 
     def __extract_address(self, value_text: str) -> str:
-        """Extracts and returns the postal code from the address string."""
+        """Extracts and returns the adress from the string."""
         return value_text.split(',')[-1]
 
     def __validate(self, value: str) -> bool:
